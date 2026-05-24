@@ -31,18 +31,39 @@ public class InventoryPage extends BasePage {
                 .collect(Collectors.toList());
     }
 
-    /** Click add-to-cart and wait for badge to reach expected count. */
+    /**
+     * Adds a product and verifies the action via TWO signals:
+     *  1. The product's specific Add button flips to Remove → click registered
+     *  2. The cart badge reaches the expected count → state propagated
+     *
+     * This double-check eliminates the "silent click loss" issue on CI runners
+     * where React re-renders can race with the next interaction.
+     */
     public InventoryPage addToCart(String productName) {
+        String slug = productName.toLowerCase().replace(" ", "-");
+        By addBtn    = By.cssSelector("[data-test='add-to-cart-" + slug + "']");
+        By removeBtn = By.cssSelector("[data-test='remove-" + slug + "']");
+
         int expectedCount = cartCount() + 1;
-        String key = "add-to-cart-" + productName.toLowerCase().replace(" ", "-");
-        click(By.cssSelector("[data-test='" + key + "']"));
+
+        // 🔑 Make sure the Add button is fully ready (visible + clickable + in viewport)
+        WaitUtils.clickable(addBtn);
+
+        click(addBtn);
+
+        // 🔑 PRIMARY signal: this specific button transitioned to Remove
+        WaitUtils.visible(removeBtn);
+
+        // 🔑 SECONDARY signal: cart badge reflects the new count
         waitForBadgeCount(expectedCount);
+
         return this;
     }
 
     public int cartCount() {
         try {
-            return Integer.parseInt(driver.findElement(cartBadge).getText());
+            String text = driver.findElement(cartBadge).getText().trim();
+            return text.isEmpty() ? 0 : Integer.parseInt(text);
         } catch (Exception e) {
             return 0;
         }
@@ -53,15 +74,9 @@ public class InventoryPage extends BasePage {
         return new CartPage();
     }
 
-    /** Polls badge until expected count is reached. */
+    /** Polls badge until it equals the expected count (or empty when expected=0). */
     private void waitForBadgeCount(int expected) {
         new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
-                .until(d -> {
-                    try {
-                        return Integer.parseInt(d.findElement(cartBadge).getText()) == expected;
-                    } catch (Exception ignored) {
-                        return false;
-                    }
-                });
+                .until(d -> cartCount() == expected);
     }
 }
