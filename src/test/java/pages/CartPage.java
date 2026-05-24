@@ -9,12 +9,12 @@ import utils.WaitUtils;
 
 public class CartPage extends BasePage {
 
-    private final By container   = By.id("cart_contents_container");   
+    private final By container   = By.id("cart_contents_container");
     private final By items       = By.cssSelector(".cart_item .inventory_item_name");
-    private final By checkoutBtn = By.id("checkout");                   
+    private final By checkoutBtn = By.id("checkout");
 
     public CartPage() {
-        WaitUtils.urlContains("cart.html");   
+        WaitUtils.urlContains("cart.html");
         WaitUtils.visible(container);
     }
 
@@ -24,8 +24,9 @@ public class CartPage extends BasePage {
                 .collect(Collectors.toList());
     }
 
+    
     public CheckoutPage checkout() {
-        click(checkoutBtn);
+        clickAndNavigateTo(checkoutBtn, "checkout-step-one.html");
         return new CheckoutPage();
     }
 }
