@@ -13,13 +13,8 @@ This framework automates end-to-end testing of two real, publicly accessible app
 | **UI**          | [SauceDemo](https://www.saucedemo.com)     | E-commerce flow: login, inventory, cart, checkout        |
 | **API**         | [DummyJSON](https://dummyjson.com)         | Authentication (JWT), CRUD users, search, secured APIs   |
 | **Integration** | API + UI combined                          | Create data via API → validate via UI                    |
-
-The goal is to showcase how a **Senior SDET** designs, organizes, and delivers a maintainable automation framework.
-
 ---
-
 ## ✨ Key Features
-
 - ✅ Hybrid framework — UI + API + Integration in one cohesive structure
 - ✅ Page Object Model with stable `data-test` selectors
 - ✅ Token-based authentication with auto-refresh on `401 Unauthorized`
@@ -28,11 +23,8 @@ The goal is to showcase how a **Senior SDET** designs, organizes, and delivers a
 - ✅ Retry handling at both test and action level
 - ✅ Allure reporting with screenshots & API request/response logs
 - ✅ Externalized configuration — no hardcoded URLs or credentials
-
 ---
-
 ## 🛠 Tech Stack
-
 | Category             | Technology                  |
 |----------------------|-----------------------------|
 | Language             | Java 11                     |
@@ -46,13 +38,9 @@ The goal is to showcase how a **Senior SDET** designs, organizes, and delivers a
 | Test Data Generation | JavaFaker                   |
 | JSON Handling        | Jackson Databind            |
 | Schema Validation    | JSON Schema Validator       |
-
 ---
-
 ## ✅ Prerequisites (Install Before Cloning)
-
 Make sure the following are installed on your machine:
-
 | Tool                       | Version       | Verify Installation       |
 |-----------------------------|---------------|----------------------------|
 | **Java JDK**                | 11 or higher  | `java -version`           |
@@ -61,9 +49,7 @@ Make sure the following are installed on your machine:
 | **Google Chrome**           | Latest        | Required for UI tests     |
 | **Mozilla Firefox**         | Latest        | Required for UI tests     |
 | **Allure CLI** *(optional)* | 2.27+         | `allure --version`        |
-
 ### 🔧 Installation Links
-
 - **Java 11+** → https://adoptium.net/
 - **Maven** → https://maven.apache.org/download.cgi
 - **Git** → https://git-scm.com/downloads
@@ -73,11 +59,8 @@ Make sure the following are installed on your machine:
 - **Allure CLI** (macOS) → `brew install allure`
 
 > ℹ️ WebDriverManager auto-downloads browser drivers — no manual driver setup is required.
-
 ---
-
 ## 🚀 Getting Started
-
 ### 1️⃣ Clone the Repository
 ```bash
 # Clone the repository
