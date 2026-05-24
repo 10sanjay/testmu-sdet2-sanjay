@@ -1,0 +1,7 @@
+target/
+allure-results/
+allure-report/
+.idea/
+.vscode/
+*.log
+*.class

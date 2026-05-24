@@ -1,0 +1,4 @@
+[
+  { "firstName": "John", "lastName": "Doe",   "zip": "12345" },
+  { "firstName": "Jane", "lastName": "Smith", "zip": "67890" }
+]
