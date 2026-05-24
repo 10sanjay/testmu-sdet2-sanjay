@@ -1,7 +1,12 @@
 package pages;
 
-import org.openqa.selenium.By;
+import java.time.Duration;
 
+import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import core.FrameworkConstants;
 import utils.WaitUtils;
 
 public class CheckoutPage extends BasePage {
@@ -17,7 +22,9 @@ public class CheckoutPage extends BasePage {
 
     public CheckoutPage() {
         WaitUtils.urlContains("checkout-step-one.html");
-        WaitUtils.visible(firstName);
+        
+        new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
+                .until(ExpectedConditions.elementToBeClickable(firstName));
     }
 
     public CheckoutPage fillInfo(String f, String l, String zip) {
@@ -42,9 +49,12 @@ public class CheckoutPage extends BasePage {
         return WaitUtils.visible(completeHdr).getText();
     }
 
-    /** Submit empty form — error appears on same page, no navigation. */
+    /** Submits empty form — verifies error appears WITHOUT URL change. */
     public String submitInvalid() {
         click(continueBtn);
-        return WaitUtils.visible(errorMsg).getText();
+        // 🔑 Error appears on SAME page → just wait for it
+        return new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
+                .until(ExpectedConditions.visibilityOfElementLocated(errorMsg))
+                .getText();
     }
 }

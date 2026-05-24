@@ -1,10 +1,14 @@
 package pages;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import core.FrameworkConstants;
 import utils.WaitUtils;
 
 public class InventoryPage extends BasePage {
@@ -17,6 +21,8 @@ public class InventoryPage extends BasePage {
     public InventoryPage() {
         WaitUtils.urlContains("inventory");
         WaitUtils.visible(container);
+        // 🔑 Ensure first item is fully rendered (React hydration complete)
+        WaitUtils.visible(itemNames);
     }
 
     public boolean isLoaded() { return isDisplayed(container); }
@@ -27,10 +33,25 @@ public class InventoryPage extends BasePage {
                 .collect(Collectors.toList());
     }
 
+    /** Adds product and verifies the action by:
+     *  (1) waiting for the button to flip to "Remove"
+     *  (2) waiting for badge count to reach expected value */
     public InventoryPage addToCart(String productName) {
-        String key = "add-to-cart-" + productName.toLowerCase().replace(" ", "-");
-        click(By.cssSelector("[data-test='" + key + "']"));
-        WaitUtils.visible(cartBadge);            
+        int currentCount = cartCount();
+        int expectedCount = currentCount + 1;
+
+        String addKey    = "add-to-cart-" + productName.toLowerCase().replace(" ", "-");
+        String removeKey = "remove-" + productName.toLowerCase().replace(" ", "-");
+
+        By addBtn    = By.cssSelector("[data-test='" + addKey + "']");
+        By removeBtn = By.cssSelector("[data-test='" + removeKey + "']");
+
+        click(addBtn);
+
+        new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
+                .until(ExpectedConditions.visibilityOfElementLocated(removeBtn));
+
+        waitForBadgeCount(expectedCount);
         return this;
     }
 
@@ -40,9 +61,20 @@ public class InventoryPage extends BasePage {
                 : 0;
     }
 
-    
     public CartPage openCart() {
         clickAndNavigateTo(cartLink, "cart.html");
         return new CartPage();
+    }
+
+    /** Polls the badge until its number matches expected count. */
+    private void waitForBadgeCount(int expected) {
+        new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
+                .until(d -> {
+                    try {
+                        return Integer.parseInt(d.findElement(cartBadge).getText()) == expected;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
     }
 }

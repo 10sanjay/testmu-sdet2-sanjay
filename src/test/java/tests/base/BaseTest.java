@@ -1,12 +1,18 @@
 package tests.base;
 
+import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.Listeners;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+
 import core.ConfigManager;
 import core.DriverManager;
 import core.ScenarioContext;
 import io.restassured.RestAssured;
 import listeners.TestListener;
-import org.testng.ITestResult;
-import org.testng.annotations.*;
 import utils.AllureUtils;
 import utils.ScreenshotUtil;
 
@@ -23,21 +29,26 @@ public abstract class BaseTest {
     public void setUp(@Optional("") String browser) {
         if (requiresBrowser()) {
             String b = (browser == null || browser.isBlank())
-                    ? ConfigManager.get("browser.name") : browser;
+                    ? ConfigManager.get("browser.name")
+                    : browser;
             DriverManager.initDriver(b);
         }
     }
 
-    /** 🔑 Capture screenshot BEFORE driver is quit. */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
         if (requiresBrowser() && DriverManager.getDriver() != null) {
-            // 📸 Take screenshot on failure WHILE the driver is still alive
             if (result.getStatus() == ITestResult.FAILURE) {
                 AllureUtils.attachScreenshot(
                         result.getMethod().getMethodName(),
-                        ScreenshotUtil.capture()
-                );
+                        ScreenshotUtil.capture());
+            }
+            try {
+
+                DriverManager.getDriver().manage().deleteAllCookies();
+                ((org.openqa.selenium.JavascriptExecutor) DriverManager.getDriver())
+                        .executeScript("window.localStorage.clear(); window.sessionStorage.clear();");
+            } catch (Exception ignored) {
             }
             DriverManager.quitDriver();
         }
