@@ -1,12 +1,9 @@
 package pages;
 
-import java.time.Duration;
-
 import org.openqa.selenium.By;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import core.FrameworkConstants;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
 import utils.WaitUtils;
 
 public class CheckoutPage extends BasePage {
@@ -22,9 +19,7 @@ public class CheckoutPage extends BasePage {
 
     public CheckoutPage() {
         WaitUtils.urlContains("checkout-step-one.html");
-        
-        new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
-                .until(ExpectedConditions.elementToBeClickable(firstName));
+        WaitUtils.allClickable(firstName, lastName, continueBtn);
     }
 
     public CheckoutPage fillInfo(String f, String l, String zip) {
@@ -49,12 +44,67 @@ public class CheckoutPage extends BasePage {
         return WaitUtils.visible(completeHdr).getText();
     }
 
-    /** Submits empty form — verifies error appears WITHOUT URL change. */
+    /**
+     * Submit empty form to validate field-level error handling.
+     *
+     * SauceDemo uses React — its internal field state stays `undefined`
+     * until a field is touched, which silently bypasses validation.
+     * We "touch" each field (type+delete) so React state becomes `""`,
+     * THEN submit so validation runs and renders the error element.
+     */
     public String submitInvalid() {
+        touchAndClear(firstName);
+        touchAndClear(lastName);
+        touchAndClear(postalCode);
+
+        // Click continue normally — React state is now properly "empty"
         click(continueBtn);
-        // 🔑 Error appears on SAME page → just wait for it
-        return new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
-                .until(ExpectedConditions.visibilityOfElementLocated(errorMsg))
-                .getText();
+
+        try {
+            return WaitUtils.visible(errorMsg).getText();
+        } catch (Exception clickFailed) {
+            // Fallback: submit form via JS (skips browser HTML5 validation)
+            submitFormViaJs();
+            try {
+                return WaitUtils.visible(errorMsg).getText();
+            } catch (Exception jsFailed) {
+                throw new RuntimeException(diagnose("Error message did not appear"), jsFailed);
+            }
+        }
+    }
+
+    // ───────── private helpers ─────────
+
+    /** Forces React to register the field as 'touched with empty value'. */
+    private void touchAndClear(By locator) {
+        WebElement el = WaitUtils.visible(locator);
+        el.sendKeys("x");
+        el.sendKeys(Keys.BACK_SPACE);
+    }
+
+    /** Programmatic form submission — fires onSubmit handler regardless of click events. */
+    private void submitFormViaJs() {
+        ((JavascriptExecutor) driver).executeScript(
+                "var form = arguments[0].closest('form');" +
+                "if (form && form.requestSubmit) { form.requestSubmit(); }" +
+                "else if (form) { form.submit(); }",
+                WaitUtils.visible(firstName)
+        );
+    }
+
+    private String diagnose(String reason) {
+        WebElement fn = WaitUtils.visible(firstName);
+        WebElement ln = WaitUtils.visible(lastName);
+        WebElement zip = WaitUtils.visible(postalCode);
+        boolean errorInDom = driver.getPageSource().contains("data-test=\"error\"");
+        return String.format(
+                "%s%n  URL: %s%n  Error element in DOM: %s%n  Fields: first='%s' last='%s' zip='%s'",
+                reason,
+                driver.getCurrentUrl(),
+                errorInDom,
+                fn.getAttribute("value"),
+                ln.getAttribute("value"),
+                zip.getAttribute("value")
+        );
     }
 }

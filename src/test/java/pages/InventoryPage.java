@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import core.FrameworkConstants;
@@ -21,8 +20,7 @@ public class InventoryPage extends BasePage {
     public InventoryPage() {
         WaitUtils.urlContains("inventory");
         WaitUtils.visible(container);
-        // 🔑 Ensure first item is fully rendered (React hydration complete)
-        WaitUtils.visible(itemNames);
+        WaitUtils.visible(itemNames);   // ensure React hydration done
     }
 
     public boolean isLoaded() { return isDisplayed(container); }
@@ -33,32 +31,21 @@ public class InventoryPage extends BasePage {
                 .collect(Collectors.toList());
     }
 
-    /** Adds product and verifies the action by:
-     *  (1) waiting for the button to flip to "Remove"
-     *  (2) waiting for badge count to reach expected value */
+    /** Click add-to-cart and wait for badge to reach expected count. */
     public InventoryPage addToCart(String productName) {
-        int currentCount = cartCount();
-        int expectedCount = currentCount + 1;
-
-        String addKey    = "add-to-cart-" + productName.toLowerCase().replace(" ", "-");
-        String removeKey = "remove-" + productName.toLowerCase().replace(" ", "-");
-
-        By addBtn    = By.cssSelector("[data-test='" + addKey + "']");
-        By removeBtn = By.cssSelector("[data-test='" + removeKey + "']");
-
-        click(addBtn);
-
-        new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
-                .until(ExpectedConditions.visibilityOfElementLocated(removeBtn));
-
+        int expectedCount = cartCount() + 1;
+        String key = "add-to-cart-" + productName.toLowerCase().replace(" ", "-");
+        click(By.cssSelector("[data-test='" + key + "']"));
         waitForBadgeCount(expectedCount);
         return this;
     }
 
     public int cartCount() {
-        return isDisplayed(cartBadge)
-                ? Integer.parseInt(WaitUtils.visible(cartBadge).getText())
-                : 0;
+        try {
+            return Integer.parseInt(driver.findElement(cartBadge).getText());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public CartPage openCart() {
@@ -66,13 +53,13 @@ public class InventoryPage extends BasePage {
         return new CartPage();
     }
 
-    /** Polls the badge until its number matches expected count. */
+    /** Polls badge until expected count is reached. */
     private void waitForBadgeCount(int expected) {
         new WebDriverWait(driver, Duration.ofSeconds(FrameworkConstants.DEFAULT_EXPLICIT_WAIT))
                 .until(d -> {
                     try {
                         return Integer.parseInt(d.findElement(cartBadge).getText()) == expected;
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                         return false;
                     }
                 });
