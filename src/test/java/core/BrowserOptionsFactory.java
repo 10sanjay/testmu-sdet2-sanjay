@@ -8,10 +8,6 @@ import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
-/**
- * Builds browser-specific options.
- * Keeps DriverManager focused on lifecycle, not configuration details.
- */
 public final class BrowserOptionsFactory {
 
     private static final String[] CHROME_STABILITY_ARGS = {
@@ -26,15 +22,18 @@ public final class BrowserOptionsFactory {
             "--disable-infobars",
             "--ignore-certificate-errors",
             "--disable-blink-features=AutomationControlled",
-            "--disable-features=AutofillServerCommunication"
+            "--disable-features=AutofillServerCommunication,PasswordLeakDetection,PasswordCheck,SafeBrowsingEnhancedProtection"
     };
 
-    private static final Map<String, Object> CHROME_PRIVACY_PREFS = Map.of(
-            "autofill.profile_enabled",                                  false,
-            "autofill.credit_card_enabled",                              false,
-            "credentials_enable_service",                                false,
-            "profile.password_manager_enabled",                          false,
-            "profile.default_content_setting_values.notifications",      2
+    private static final Map<String, Object> CHROME_PRIVACY_PREFS = Map.ofEntries(
+            Map.entry("autofill.profile_enabled",                             false),
+            Map.entry("autofill.credit_card_enabled",                         false),
+            Map.entry("credentials_enable_service",                           false),
+            Map.entry("profile.password_manager_enabled",                     false),
+            Map.entry("profile.password_manager_leak_detection",              false),
+            Map.entry("profile.default_content_setting_values.notifications", 2),
+            Map.entry("safebrowsing.enabled",                                 false),
+            Map.entry("signin.allowed_on_next_startup",                       false)
     );
 
     private BrowserOptionsFactory() {}
@@ -47,7 +46,6 @@ public final class BrowserOptionsFactory {
         }
     }
 
-    // ───────── Chrome ─────────
     private static ChromeOptions buildChrome(boolean headless) {
         ChromeOptions options = new ChromeOptions();
 
@@ -57,22 +55,24 @@ public final class BrowserOptionsFactory {
         options.addArguments("--user-data-dir=" + createTempProfile());
         options.setExperimentalOption("prefs", CHROME_PRIVACY_PREFS);
 
+        // 🔑 Suppress “Chrome is being controlled by automated test software” infobar
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+        options.setExperimentalOption("useAutomationExtension", false);
+
         return options;
     }
 
-    // ───────── Firefox ─────────
     private static FirefoxOptions buildFirefox(boolean headless) {
         FirefoxOptions options = new FirefoxOptions();
 
         if (headless) options.addArguments("-headless");
         options.addArguments("--width=1920", "--height=1080");
 
-        // Stability + privacy
         Map<String, Object> prefs = Map.of(
-                "dom.webnotifications.enabled",  false,
-                "dom.push.enabled",              false,
-                "signon.rememberSignons",        false,
-                "browser.formfill.enable",       false
+                "dom.webnotifications.enabled", false,
+                "dom.push.enabled",             false,
+                "signon.rememberSignons",       false,
+                "browser.formfill.enable",      false
         );
         prefs.forEach(options::addPreference);
 
